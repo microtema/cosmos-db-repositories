@@ -27,30 +27,41 @@ const save = async (item: any) => {
     return entityUtils.cleanUp(resource)
 }
 
-const get = async (id: string, partition: string) => {
+const get = async (id: string, partitionKey: string) => {
 
     const container = await containerInstance()
 
-    const {resource} = await container.item(id, partition).read()
+    const {resource} = await container.item(id, partitionKey).read()
 
     return entityUtils.cleanUp(resource)
 }
 
-const update = async (item: any) => {
+const update = async (updatedData: any) => {
 
     const container = await containerInstance()
 
-    const {resource} = await container.items.upsert(item)
+    const id = updatedData.id
+    const partitionKey  = updatedData[process.env.AZURE_DATASOURCE_PARTITION_KEY as string]
+
+    const { resource: existingItem } = await container.item(id, partitionKey).read();
+
+    // Merge the updates into the existing item
+    const updatedItem = {
+        ...existingItem,
+        ...updatedData, // Override with new data
+    };
+
+    const {resource} = await container.item(id, partitionKey).replace(updatedItem)
 
     return entityUtils.cleanUp(resource)
 }
 
 
-const remove = async (id: string, partition: string) => {
+const remove = async (id: string, partitionKey: string) => {
 
     const container = await containerInstance()
 
-    const {resource} = await container.item(id, partition).delete()
+    const {resource} = await container.item(id, partitionKey).delete()
 
     return entityUtils.cleanUp(resource)
 }
