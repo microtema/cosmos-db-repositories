@@ -1,13 +1,21 @@
-const build = ({searchValue, searchFields, matchFields, orderBy}:{searchValue:string, searchFields:string[], matchFields:any, orderBy:string}) => {
+const build = ({searchValue, searchFields, matchFields, orderBy}: {
+    searchValue: string,
+    searchFields: string[],
+    matchFields: any,
+    orderBy: string
+}) => {
 
     let query = 'SELECT * FROM c'
     const parameters = []
+
+    const andOperations: string[] = []
+    const orOperations: string[] = []
 
     if (searchValue && searchFields.length) {
 
         parameters.push({name: '@q', value: searchValue})
 
-        query += ' WHERE ' + searchFields.map((it: string) => 'CONTAINS(LOWER(c.' + it + '), @q)').join(' OR ')
+        searchFields.forEach(it => orOperations.push('CONTAINS(LOWER(c.' + it + '), @q)'))
     }
 
     const validFields = Object.keys(matchFields).filter(it => {
@@ -25,41 +33,88 @@ const build = ({searchValue, searchFields, matchFields, orderBy}:{searchValue:st
         return true
     })
 
-    if (validFields.length) {
 
-        validFields.forEach((it:string) => {
-            const val = matchFields[it]
+    validFields.forEach(it => {
 
-            if ( val instanceof Array) {
+        const val = matchFields[it]
 
-                if(isISO8601(val[0])) {
-                    parameters.push({name: '@from_' + it, value: val[0]})
-                    parameters.push({name: '@to_' + it, value: val[1] || new Date().toISOString()})
-                }else {
-                    parameters.push({name: '@' + it, value: matchFields[it]})
-                }
+        if (val instanceof Array) {
+
+            if (isISO8601(val[0])) {
+                parameters.push({name: '@from_' + it, value: val[0]})
+                parameters.push({name: '@to_' + it, value: val[1] || new Date().toISOString()})
             } else {
-                parameters.push({name: '@' + it, value: matchFields[it]})
+                parameters.push({name: '@' + it, value: val})
+            }
+        } else {
+
+            let value = val
+
+            if (value[0] === '!') {
+                value = value.substring(1)
             }
 
-        })
+            const tokens = it.split('.')
 
-        query += ((searchValue && searchFields.length) ? ' AND ' : ' WHERE ') + validFields.map(it => {
-
-            const val = matchFields[it]
-
-
-            if (val instanceof Array) {
-
-                if (isISO8601(val[0])) {
-
-                    return 'c.' + it + ' >= @from_' + it + ' AND c.' + it + ' <= @to_' + it
-                }
-
-                return 'ARRAY_CONTAINS(@' + it + ', c.' + it + ')'
+            if (tokens.length > 1) {
+                parameters.push({name: '@' + tokens.join('_'), value})
+            } else {
+                parameters.push({name: '@' + it, value})
             }
-            return 'c.' + it + ' = @' + it
-        }).join(' AND ')
+        }
+
+    })
+
+    validFields.forEach(it => {
+
+        const val = matchFields[it]
+
+        if (val instanceof Array) {
+
+            if (isISO8601(val[0])) {
+
+                andOperations.push('c.' + it + ' >= @from_' + it)
+                andOperations.push('c.' + it + ' <= @to_' + it)
+
+            } else {
+                andOperations.push('ARRAY_CONTAINS(@' + it + ', c.' + it + ')')
+            }
+        } else if (val[0] === '!') {
+
+            andOperations.push('c.' + it + ' != @' + it)
+        } else {
+
+            const tokens = it.split('.')
+
+            if (tokens.length > 1) {
+
+                const collectionName = tokens[0]
+                const propertyName = tokens[1]
+
+                andOperations.push('ARRAY_CONTAINS(c.' + collectionName + ', {"' + propertyName + '": @' + tokens.join('_') + '}, true)')
+            } else {
+                andOperations.push('c.' + it + ' = @' + it)
+            }
+        }
+    })
+
+    if (orOperations.length || andOperations.length) {
+
+        query += ' WHERE 1=1'
+    }
+
+    if (orOperations.length) {
+
+        if (orOperations.length === 1) {
+            query += ' AND ' + orOperations.join(' OR ')
+        } else {
+            query += ' AND (' + orOperations.join(' OR ') + ')'
+        }
+    }
+
+    if (andOperations.length) {
+
+        query += ' AND ' + andOperations.join(' AND ')
     }
 
     if (orderBy) {
@@ -71,11 +126,13 @@ const build = ({searchValue, searchFields, matchFields, orderBy}:{searchValue:st
             direction = 'ASC'
         }
 
-        query += ' ORDER BY ' + property.split(',').map((it: string) => it.trim()).map((it: string) => 'c.' + it + ' ' + direction).join(', ')
+        query += ' ORDER BY ' + property.split(',')
+            .map(it => it.trim())
+            .map(it => 'c.' + it + ' ' + direction)
+            .join(', ')
     }
 
     return {query, parameters}
-
 }
 
 
