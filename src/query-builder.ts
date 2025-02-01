@@ -1,3 +1,5 @@
+import timeUtil from './time.utils'
+
 const build = ({searchValue, searchFields, matchFields, orderBy}: {
     searchValue: string,
     searchFields: string[],
@@ -40,9 +42,9 @@ const build = ({searchValue, searchFields, matchFields, orderBy}: {
 
         if (val instanceof Array) {
 
-            if (isISO8601(val[0])) {
-                parameters.push({name: '@from_' + it, value: val[0]})
-                parameters.push({name: '@to_' + it, value: val[1] || new Date().toISOString()})
+            if (timeUtil.isDateTimeFormat(val[0])) {
+                parameters.push({name: '@from_' + it, value: timeUtil.toUTC(val[0])})
+                parameters.push({name: '@to_' + it, value: timeUtil.toUTC(val[1] || new Date().toISOString())})
             } else {
                 parameters.push({name: '@' + it, value: val})
             }
@@ -58,6 +60,8 @@ const build = ({searchValue, searchFields, matchFields, orderBy}: {
 
             if (tokens.length > 1) {
                 parameters.push({name: '@' + tokens.join('_'), value})
+            } else if(timeUtil.isDateTimeFormat(value)) {
+                parameters.push({name: '@' + it, value: timeUtil.toUTC(value)})
             } else {
                 parameters.push({name: '@' + it, value})
             }
@@ -71,7 +75,7 @@ const build = ({searchValue, searchFields, matchFields, orderBy}: {
 
         if (val instanceof Array) {
 
-            if (isISO8601(val[0])) {
+            if (timeUtil.isDateTimeFormat(val[0])) {
 
                 andOperations.push('c.' + it + ' >= @from_' + it)
                 andOperations.push('c.' + it + ' <= @to_' + it)
@@ -135,13 +139,6 @@ const build = ({searchValue, searchFields, matchFields, orderBy}: {
     return {query, parameters}
 }
 
-
-const iso8601Regex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/;
-
-function isISO8601(value: string) {
-    return iso8601Regex.test(value);
-}
-
 class BuildInstance {
 
     template = 'SELECT {distinct} {columns} FROM c {orderBy}'
@@ -160,8 +157,6 @@ class BuildInstance {
     distinct(isDistinct?: true) {
 
         this.isDistinct = isDistinct === undefined ? true : isDistinct
-
-        console.log('isDistinct', this.isDistinct)
 
         return this
     }

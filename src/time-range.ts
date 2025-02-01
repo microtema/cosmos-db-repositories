@@ -21,7 +21,7 @@ const parse = (time: string) => {
             return buildNextMonthRange()
     }
 
-    return time
+    return time.split(',').map(it => it.trim())
 }
 
 function buildAllDayRange() {

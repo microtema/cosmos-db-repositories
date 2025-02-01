@@ -1,4 +1,5 @@
 import queryBuilder from './query-builder'
+import timeUtil from './time.utils'
 
 describe('Query Builder', () => {
 
@@ -60,10 +61,10 @@ describe('Query Builder', () => {
         expect(answer).toBeDefined()
         expect(answer.parameters).toEqual([{
             "name": "@from_updatedDate",
-            "value": "2025-01-17T22:18:54.245Z",
+            "value": timeUtil.toUTC("2025-01-17T22:18:54.245Z"),
         }, {
             "name": "@to_updatedDate",
-            "value": "2025-01-17T22:18:54.245Z",
+            "value": timeUtil.toUTC("2025-01-17T22:18:54.245Z"),
         }])
         expect(answer.query).toEqual("SELECT * FROM c WHERE 1=1 AND c.updatedDate >= @from_updatedDate AND c.updatedDate <= @to_updatedDate")
     })
@@ -80,7 +81,7 @@ describe('Query Builder', () => {
         expect(answer).toBeDefined()
         expect(answer.parameters).toEqual([{
             "name": "@startDate",
-            "value": "2025-01-17T22:18:54.245Z",
+            "value": timeUtil.toUTC("2025-01-17T22:18:54.245Z"),
         }])
         expect(answer.query).toEqual("SELECT * FROM c WHERE 1=1 AND c.startDate = @startDate")
     })

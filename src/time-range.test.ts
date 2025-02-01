@@ -1,5 +1,5 @@
 import timeRange from './time-range'
-import {DateTime} from "luxon";
+import {DateTime, Zone} from 'luxon'
 
 describe('Time Range', () => {
 
@@ -22,6 +22,42 @@ describe('Time Range', () => {
         expect(to).toBeDefined()
         expect(DateTime.fromISO(to)).toBeDefined()
 
+    })
+
+    it('custom', () => {
+
+        const time = 'start,end'
+
+        const answer = sut.parse(time) as string[]
+
+        expect(answer).toBeDefined()
+        expect(answer.length).toEqual(2)
+
+        const [from, to] = answer
+
+        expect(from).toBeDefined()
+        expect(from).toEqual('start')
+
+        expect(to).toBeDefined()
+        expect(to).toEqual('end')
+    })
+
+    it('custom with trim', () => {
+
+        const time = 'start, end'
+
+        const answer = sut.parse(time) as string[]
+
+        expect(answer).toBeDefined()
+        expect(answer.length).toEqual(2)
+
+        const [from, to] = answer
+
+        expect(from).toBeDefined()
+        expect(from).toEqual('start')
+
+        expect(to).toBeDefined()
+        expect(to).toEqual('end')
     })
 })
 
