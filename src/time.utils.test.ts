@@ -55,6 +55,6 @@ describe('Time Utils', () => {
         const answer = sut.toLocalTime(utc)
 
         expect(answer).toBeDefined()
-        expect(answer).toEqual(utc)^                                                                                                                                                                                                                            ^
+        expect(answer).toEqual(utc)                                                                                                                                                                                                                         ^
     })
 })
