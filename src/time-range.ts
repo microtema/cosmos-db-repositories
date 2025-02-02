@@ -1,81 +1,92 @@
 import {DateTime} from 'luxon'
+import timeUtil from './time.utils'
 
+// Default time zone from environment variables or fallback to "Europe/Berlin"
+const DEFAULT_ZONE: string = process.env.DEFAULT_ZONE || 'Europe/Berlin'
 
-const parse = (time: string) => {
+const parse = (time: string, zone: string = DEFAULT_ZONE) => {
 
     if (!time) {
         return null
     }
     switch (time.toLowerCase()) {
         case 'today':
-            return buildAllDayRange()
+            return buildAllDayRange(zone)
         case 'tomorrow':
-            return buildTomorrowRange()
+            return buildTomorrowRange(zone)
         case 'this week':
-            return buildAllWeekRange()
+            return buildAllWeekRange(zone)
         case 'next week':
-            return buildNextWeekRange()
+            return buildNextWeekRange(zone)
         case 'this month':
-            return buildAllMonthRange()
+            return buildAllMonthRange(zone)
         case 'next month':
-            return buildNextMonthRange()
+            return buildNextMonthRange(zone)
     }
 
-    return time.split(',').map(it => it.trim())
+    return time.split(',')
+        .map(it => it.trim())
+        .map(it => timeUtil.toUTC(it, zone))
+        .map(it => it.toISOString())
 }
 
-function buildAllDayRange() {
+const buildAllDayRange = (zone: string) => {
 
-    const now = DateTime.now();
+    const now = DateTime.now().setZone(zone);
     const start = now.startOf('day');
     const end = now.endOf('day');
 
-    return [start.toISO(), end.toISO()]
+    return buildRange(start, end)
 }
 
-function buildTomorrowRange() {
+const buildTomorrowRange = (zone: string) => {
 
-    const now = DateTime.now();
+    const now = DateTime.now().setZone(zone);
     const start = now.plus({days: 1}).startOf('day');
     const end = now.plus({days: 1}).endOf('day');
 
-    return [start.toISO(), end.toISO()]
+    return buildRange(start, end)
 }
 
-function buildAllWeekRange() {
+const buildAllWeekRange = (zone: string) => {
 
-    const now = DateTime.now();
+    const now = DateTime.now().setZone(zone);
     const start = now.startOf('week')
     const end = now.endOf('week')
 
-    return [start.toISO(), end.toISO()]
+    return buildRange(start, end)
 }
 
-function buildNextWeekRange() {
+const buildNextWeekRange = (zone: string) => {
 
-    const now = DateTime.now()
+    const now = DateTime.now().setZone(zone);
     const start = now.startOf('week').plus({days: 7}).startOf('day')
     const end = now.endOf('week').plus({days: 7}).endOf('day')
 
-    return [start.toISO(), end.toISO()]
+    return buildRange(start, end)
 }
 
-function buildAllMonthRange() {
+const buildAllMonthRange = (zone: string) => {
 
-    const now = DateTime.now()
+    const now = DateTime.now().setZone(zone);
     const start = now.startOf('month')
     const end = now.endOf('month')
 
-    return [start.toISO(), end.toISO()]
+    return buildRange(start, end)
 }
 
-function buildNextMonthRange() {
+const buildNextMonthRange = (zone: string) => {
 
-    const now = DateTime.now()
+    const now = DateTime.now().setZone(zone);
     const start = now.plus({month: 1}).startOf('month')
     const end = now.plus({month: 1}).endOf('month')
 
-    return [start.toISO(), end.toISO()]
+    return buildRange(start, end)
+}
+
+const buildRange = (start: DateTime, end: DateTime) => {
+
+    return [start.toJSDate().toISOString(), end.toJSDate().toISOString()]
 }
 
 export default {parse}

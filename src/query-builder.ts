@@ -7,8 +7,8 @@ const build = ({searchValue, searchFields, matchFields, orderBy}: {
     orderBy: string
 }) => {
 
-    let query = 'SELECT * FROM c'
-    const parameters = []
+    let query: string = 'SELECT * FROM c'
+    const parameters: any[] = []
 
     const andOperations: string[] = []
     const orOperations: string[] = []
@@ -60,7 +60,7 @@ const build = ({searchValue, searchFields, matchFields, orderBy}: {
 
             if (tokens.length > 1) {
                 parameters.push({name: '@' + tokens.join('_'), value})
-            } else if(timeUtil.isDateTimeFormat(value)) {
+            } else if (timeUtil.isDateTimeFormat(value)) {
                 parameters.push({name: '@' + it, value: timeUtil.toUTC(value)})
             } else {
                 parameters.push({name: '@' + it, value})
@@ -141,27 +141,29 @@ const build = ({searchValue, searchFields, matchFields, orderBy}: {
 
 class BuildInstance {
 
-    template = 'SELECT {distinct} {columns} FROM c {orderBy}'
-    isDistinct = false
-    listOfColumns: Array<string> = []
-    sortDirection = ''
-    sortProperties: Array<string> = []
+    private template = 'SELECT{top}{distinct} {columns} FROM c{where} {orderBy}'
+    private isDistinct = false
+    private topValue = 0
+    private listOfColumns: Array<string> = []
+    private whereQuery = ''
+    private sortDirection = ''
+    private sortProperties: Array<string> = []
 
-    columns(...columns: any[]) {
+    public columns(...columns: any[]) {
 
         columns.forEach(it => this.listOfColumns.push(it))
 
         return this
     }
 
-    distinct(isDistinct?: true) {
+    public distinct(isDistinct?: true) {
 
         this.isDistinct = isDistinct === undefined ? true : isDistinct
 
         return this
     }
 
-    sort(...columns: any[]) {
+    public sort(...columns: any[]) {
         columns.forEach(it => this.sortProperties.push(it))
 
         if (columns.length === 0) {
@@ -171,21 +173,34 @@ class BuildInstance {
         return this
     }
 
-    asc() {
+    public asc() {
         this.sortDirection = 'ASC'
         return this
     }
 
-    desc() {
+    public top(top: number) {
+        this.topValue = top
+        return this
+    }
+
+    public where(where: string) {
+        this.whereQuery = where
+        return this
+    }
+
+    public desc() {
         this.sortDirection = 'DESC'
         return this
     }
 
-    build() {
+
+    public build() {
 
         return this.template
-            .replace('{distinct}', this.isDistinct ? 'DISTINCT' : '')
+            .replace('{top}', this.topValue ? ' TOP ' + this.topValue : '')
+            .replace('{distinct}', this.isDistinct ? ' DISTINCT' : '')
             .replace('{columns}', this.listOfColumns.length ? this.listOfColumns.map(it => 'c.' + it).join(', ') : '*')
+            .replace('{where}', this.whereQuery ? ' WHERE ' + this.whereQuery : '')
             .replace('{orderBy}', this.sortProperties.length ? 'ORDER BY ' + this.sortProperties.map(it => ('c.' + it + ' ' + this.sortDirection).trim()).join(', ') : '')
     }
 }

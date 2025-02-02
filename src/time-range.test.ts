@@ -1,5 +1,6 @@
 import timeRange from './time-range'
-import {DateTime, Zone} from 'luxon'
+import timeUtil from './time.utils'
+import {DateTime} from 'luxon'
 
 describe('Time Range', () => {
 
@@ -17,6 +18,7 @@ describe('Time Range', () => {
         const [from, to] = answer
 
         expect(from).toBeDefined()
+        expect(timeUtil.isDateTimeFormat(from)).toEqual(true)
         expect(DateTime.fromISO(from)).toBeDefined()
 
         expect(to).toBeDefined()
@@ -24,27 +26,20 @@ describe('Time Range', () => {
 
     })
 
-    it('custom', () => {
+    it('today with custom zone', () => {
 
-        const time = 'start,end'
+        const time = 'today'
+        const zone = 'Europe/Berlin'
 
-        const answer = sut.parse(time) as string[]
+        const answer = sut.parse(time, zone)
 
-        expect(answer).toBeDefined()
-        expect(answer.length).toEqual(2)
+        expect(answer).toEqual(sut.parse(time))
 
-        const [from, to] = answer
-
-        expect(from).toBeDefined()
-        expect(from).toEqual('start')
-
-        expect(to).toBeDefined()
-        expect(to).toEqual('end')
     })
 
-    it('custom with trim', () => {
+    it('custom', () => {
 
-        const time = 'start, end'
+        const time = '2025-01-02,2025-03-02'
 
         const answer = sut.parse(time) as string[]
 
@@ -54,10 +49,29 @@ describe('Time Range', () => {
         const [from, to] = answer
 
         expect(from).toBeDefined()
-        expect(from).toEqual('start')
+        expect(from).toEqual('2025-01-01T23:00:00.000Z')
 
         expect(to).toBeDefined()
-        expect(to).toEqual('end')
+        expect(to).toEqual('2025-03-01T23:00:00.000Z')
+    })
+
+    it('custom with custom zone', () => {
+
+        const time = '2025-01-02, 2025-03-02'
+        const zone = 'Europe/Berlin'
+
+        const answer = sut.parse(time, zone) as string[]
+
+        expect(answer).toBeDefined()
+        expect(answer.length).toEqual(2)
+
+        const [from, to] = answer
+
+        expect(from).toBeDefined()
+        expect(from).toEqual('2025-01-01T23:00:00.000Z')
+
+        expect(to).toBeDefined()
+        expect(to).toEqual('2025-03-01T23:00:00.000Z')
     })
 })
 

@@ -19,7 +19,7 @@ describe('Query Builder', () => {
         const answer = sut.build({searchValue, searchFields, matchFields, orderBy})
 
         expect(answer).toBeDefined()
-        expect(answer.parameters).toEqual([ {
+        expect(answer.parameters).toEqual([{
             "name": "@jobTitle",
             "value": "Consultant",
         }, {
@@ -167,6 +167,95 @@ describe('Query Builder', () => {
             "value": "info@mail.com",
         }])
         expect(answer.query).toEqual("SELECT * FROM c WHERE 1=1 AND (CONTAINS(LOWER(c.firstName), @q) OR CONTAINS(LOWER(c.lastName), @q)) AND c.age = @age AND c.mail = @mail ORDER BY c.firstName ASC, c.lastName ASC")
+    })
+
+    it('instance spec with WHERE', () => {
+
+        const answer = sut.instance()
+            .columns('firstName', 'lastName')
+            .where('c.firstName = "foo" ')
+            .sort('firstName')
+            .build()
+
+        expect(answer).toBeDefined()
+        expect(answer).toEqual('SELECT c.firstName, c.lastName FROM c  WHERE c.firstName = "foo" ORDER BY c.firstName')
+    })
+
+    it('instance spec with AND', () => {
+
+        const answer = sut.instance()
+            .columns('firstName', 'lastName')
+            .where('c.firstName = "foo" AND c.lastName = "bar"')
+            .sort('firstName')
+            .build()
+
+        expect(answer).toBeDefined()
+        expect(answer).toEqual('SELECT c.firstName, c.lastName FROM c  WHERE c.firstName = "foo" AND c.lastName = "bar" ORDER BY c.firstName')
+    })
+
+    it('instance spec with AND and OR', () => {
+
+        const answer = sut.instance()
+            .columns('firstName', 'lastName')
+            .where('(c.firstName = "foo" AND c.lastName = "bar") OR (c.city = "Berlin" AND c.age > 25) OR ((c.city != "Paris" AND c.age < 40) OR c.age IS NULL)')
+            .sort('firstName')
+            .build()
+
+        expect(answer).toBeDefined()
+        expect(answer).toEqual('SELECT c.firstName, c.lastName FROM c (c.firstName = "foo" AND c.lastName = "bar") OR (c.city = "Berlin" AND c.age > 25) OR ((c.city != "Paris" AND c.age < 40) OR c.age IS NULL) ORDER BY c.firstName')
+    })
+
+
+    it('instance spec with TOP', () => {
+
+        const answer = sut.instance()
+            .columns('firstName', 'lastName')
+            .top(25)
+            .where('c.firstName = "foo"')
+            .sort('firstName')
+            .build()
+
+        expect(answer).toBeDefined()
+        expect(answer).toEqual('SELECT TOP 25 c.firstName, c.lastName FROM c WHERE c.firstName = "foo" ORDER BY c.firstName')
+    })
+
+    it('instance spec with distinct', () => {
+
+        const answer = sut.instance()
+            .columns('firstName', 'lastName')
+            .distinct()
+            .where('c.firstName = "foo"')
+            .sort('firstName')
+            .build()
+
+        expect(answer).toBeDefined()
+        expect(answer).toEqual('SELECT DISTINCT c.firstName, c.lastName FROM c WHERE c.firstName = "foo" ORDER BY c.firstName')
+    })
+
+    it('instance spec with asc', () => {
+
+        const answer = sut.instance()
+            .columns('firstName', 'lastName')
+            .asc()
+            .where('c.firstName = "foo"')
+            .sort('firstName')
+            .build()
+
+        expect(answer).toBeDefined()
+        expect(answer).toEqual('SELECT c.firstName, c.lastName FROM c WHERE c.firstName = "foo" ORDER BY c.firstName ASC')
+    })
+
+    it('instance spec with desc', () => {
+
+        const answer = sut.instance()
+            .columns('firstName', 'lastName')
+            .desc()
+            .where('c.firstName = "foo"')
+            .sort('firstName')
+            .build()
+
+        expect(answer).toBeDefined()
+        expect(answer).toEqual('SELECT c.firstName, c.lastName FROM c WHERE c.firstName = "foo" ORDER BY c.firstName DESC')
     })
 })
 

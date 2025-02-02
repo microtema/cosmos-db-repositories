@@ -85,9 +85,7 @@ const query = async (querySpec: any, pageRequest: any) => {
         continuationToken,
         totalPages: Math.ceil(totalItems / rowsPerPage),
         content: results.map(entityUtils.cleanUp),
-        map: (converter: any) => {
-            data.content = data.content.map(converter)
-        }
+        map: (converter: any) => data.content = data.content.map(converter)
     }
 
     return data
