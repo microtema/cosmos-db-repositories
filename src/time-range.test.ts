@@ -26,6 +26,26 @@ describe('Time Range', () => {
 
     })
 
+    it('all', () => {
+
+        const timeRanges = [
+            'yesterday', 'today', 'tomorrow',
+            'last week', 'this week', 'next week',
+            'last month', 'this month', 'next month',
+            'last quarter', 'this quarter', 'next quarter',
+            '1 quarter', '2 quarter', '3 quarter', '4 quarter'
+        ]
+
+        timeRanges.forEach(it => {
+            const answer = sut.parse(it)
+
+            expect(answer).toBeDefined()
+            expect(answer?.length).toEqual(2)
+            console.log(it, ' -> ', answer)
+        })
+
+    })
+
     it('today with custom zone', () => {
 
         const time = 'today'

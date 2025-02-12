@@ -1,5 +1,7 @@
 import queryBuilder from './query-builder'
 import timeUtil from './time.utils'
+import timeRange from './time-range'
+import {DateTime} from "luxon";
 
 describe('Query Builder', () => {
 
@@ -178,7 +180,7 @@ describe('Query Builder', () => {
             .build()
 
         expect(answer).toBeDefined()
-        expect(answer).toEqual('SELECT c.firstName, c.lastName FROM c  WHERE c.firstName = "foo" ORDER BY c.firstName')
+        expect(answer).toEqual('SELECT c.firstName, c.lastName FROM c WHERE c.firstName = "foo"  ORDER BY c.firstName')
     })
 
     it('instance spec with AND', () => {
@@ -190,7 +192,7 @@ describe('Query Builder', () => {
             .build()
 
         expect(answer).toBeDefined()
-        expect(answer).toEqual('SELECT c.firstName, c.lastName FROM c  WHERE c.firstName = "foo" AND c.lastName = "bar" ORDER BY c.firstName')
+        expect(answer).toEqual('SELECT c.firstName, c.lastName FROM c WHERE c.firstName = "foo" AND c.lastName = "bar" ORDER BY c.firstName')
     })
 
     it('instance spec with AND and OR', () => {
@@ -202,7 +204,7 @@ describe('Query Builder', () => {
             .build()
 
         expect(answer).toBeDefined()
-        expect(answer).toEqual('SELECT c.firstName, c.lastName FROM c (c.firstName = "foo" AND c.lastName = "bar") OR (c.city = "Berlin" AND c.age > 25) OR ((c.city != "Paris" AND c.age < 40) OR c.age IS NULL) ORDER BY c.firstName')
+        expect(answer).toEqual('SELECT c.firstName, c.lastName FROM c WHERE (c.firstName = "foo" AND c.lastName = "bar") OR (c.city = "Berlin" AND c.age > 25) OR ((c.city != "Paris" AND c.age < 40) OR c.age IS NULL) ORDER BY c.firstName')
     })
 
 
@@ -256,6 +258,50 @@ describe('Query Builder', () => {
 
         expect(answer).toBeDefined()
         expect(answer).toEqual('SELECT c.firstName, c.lastName FROM c WHERE c.firstName = "foo" ORDER BY c.firstName DESC')
+    })
+
+    it('query', async () => {
+
+        const searchValue = 'foo'
+        const orderBy = 'firstName'
+
+        const status = 'New'
+        const portfolio = 'Cloud'
+        const nextActivityDueDate = timeRange.parse('2025-02-11T23:00:00.000Z,2025-02-12T22:59:59.999Z')
+
+        const searchFields = ['company', 'portfolio']
+        const matchFields = {portfolio, status, 'nextActivity.dueDate': nextActivityDueDate, markAsDeleted: false}
+
+        const answer = sut.build({searchValue, searchFields, matchFields, orderBy})
+
+        expect(answer).toBeDefined()
+
+        const {query, parameters} = answer
+
+        expect(query).toBeDefined()
+        expect(query).toEqual('SELECT * FROM c WHERE 1=1 AND (CONTAINS(LOWER(c.company), @q) OR CONTAINS(LOWER(c.portfolio), @q)) AND c.portfolio = @portfolio AND c.status = @status AND c.nextActivity.dueDate >= @from_nextActivity_dueDate AND c.nextActivity.dueDate <= @to_nextActivity_dueDate AND c.markAsDeleted = @markAsDeleted ORDER BY c.firstName DESC')
+
+        expect(parameters).toBeDefined()
+        expect(parameters).toEqual([{
+            "name": "@q",
+            "value": "foo",
+        }, {
+            "name": "@portfolio",
+            "value": "Cloud",
+        }, {
+            "name": "@status",
+            "value": "New",
+        }, {
+            "name": "@from_nextActivity_dueDate",
+            "value": DateTime.fromISO("2025-02-11T23:00:00.000Z").toJSDate(),
+        }, {
+            "name": "@to_nextActivity_dueDate",
+            "value": DateTime.fromISO("2025-02-12T22:59:59.999Z").toJSDate(),
+        }, {
+            "name": "@markAsDeleted",
+            "value": false,
+        }
+        ])
     })
 })
 

@@ -39,14 +39,15 @@ const build = ({searchValue, searchFields, matchFields, orderBy}: {
     validFields.forEach(it => {
 
         const val = matchFields[it]
+        const key = it.split('.').join('_')
 
         if (val instanceof Array) {
 
             if (timeUtil.isDateTimeFormat(val[0])) {
-                parameters.push({name: '@from_' + it, value: timeUtil.toUTC(val[0])})
-                parameters.push({name: '@to_' + it, value: timeUtil.toUTC(val[1] || new Date().toISOString())})
+                parameters.push({name: '@from_' + key, value: timeUtil.toUTC(val[0])})
+                parameters.push({name: '@to_' + key, value: timeUtil.toUTC(val[1] || new Date().toISOString())})
             } else {
-                parameters.push({name: '@' + it, value: val})
+                parameters.push({name: '@' + key, value: val})
             }
         } else {
 
@@ -56,14 +57,10 @@ const build = ({searchValue, searchFields, matchFields, orderBy}: {
                 value = value.substring(1)
             }
 
-            const tokens = it.split('.')
-
-            if (tokens.length > 1) {
-                parameters.push({name: '@' + tokens.join('_'), value})
-            } else if (timeUtil.isDateTimeFormat(value)) {
-                parameters.push({name: '@' + it, value: timeUtil.toUTC(value)})
+            if (timeUtil.isDateTimeFormat(value)) {
+                parameters.push({name: '@' + key, value: timeUtil.toUTC(value)})
             } else {
-                parameters.push({name: '@' + it, value})
+                parameters.push({name: '@' + key, value})
             }
         }
 
@@ -72,20 +69,21 @@ const build = ({searchValue, searchFields, matchFields, orderBy}: {
     validFields.forEach(it => {
 
         const val = matchFields[it]
+        const key = it.split('.').join('_')
 
         if (val instanceof Array) {
 
             if (timeUtil.isDateTimeFormat(val[0])) {
 
-                andOperations.push('c.' + it + ' >= @from_' + it)
-                andOperations.push('c.' + it + ' <= @to_' + it)
+                andOperations.push('c.' + it + ' >= @from_' + key)
+                andOperations.push('c.' + it + ' <= @to_' + key)
 
             } else {
-                andOperations.push('ARRAY_CONTAINS(@' + it + ', c.' + it + ')')
+                andOperations.push('ARRAY_CONTAINS(@' + key + ', c.' + it + ')')
             }
         } else if (val[0] === '!') {
 
-            andOperations.push('c.' + it + ' != @' + it)
+            andOperations.push('c.' + it + ' != @' + key)
         } else {
 
             const tokens = it.split('.')
@@ -95,9 +93,9 @@ const build = ({searchValue, searchFields, matchFields, orderBy}: {
                 const collectionName = tokens[0]
                 const propertyName = tokens[1]
 
-                andOperations.push('ARRAY_CONTAINS(c.' + collectionName + ', {"' + propertyName + '": @' + tokens.join('_') + '}, true)')
+                andOperations.push('ARRAY_CONTAINS(c.' + collectionName + ', {"' + propertyName + '": @' + key + '}, true)')
             } else {
-                andOperations.push('c.' + it + ' = @' + it)
+                andOperations.push('c.' + it + ' = @' + key)
             }
         }
     })
