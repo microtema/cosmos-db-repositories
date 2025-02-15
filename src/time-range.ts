@@ -42,6 +42,8 @@ const parse = (time: string, zone: string = DEFAULT_ZONE) => {
             return build3QuarterRange(zone)
         case '4 quarter':
             return build4QuarterRange(zone)
+        case 'all':
+            return buildRange(DateTime.now().setZone(zone).minus({year: 10}).startOf('day'), DateTime.now().setZone(zone).plus({year: 10}).endOf('day'))
     }
 
     return time.split(',')
@@ -53,7 +55,7 @@ const parse = (time: string, zone: string = DEFAULT_ZONE) => {
 const buildYesterdayRange = (zone: string) => {
 
     const now = DateTime.now().setZone(zone);
-    const start = now.startOf('day').minus({day:1});
+    const start = now.startOf('day').minus({day: 1});
     const end = start.endOf('day');
 
     return buildRange(start, end)
@@ -194,7 +196,7 @@ const buildNextQuarterRange = (zone: string) => {
 const buildLastQuarterFromLastYearRange = (zone: string) => {
 
     const now = DateTime.now().setZone(zone);
-    const start = now.endOf('year').minus({year:1})
+    const start = now.endOf('year').minus({year: 1})
     const end = start.plus({month: 3})
 
     return buildRange(start, end)

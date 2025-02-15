@@ -1,4 +1,4 @@
-import {Container, CosmosClient} from '@azure/cosmos'
+import {Container, CosmosClient, FeedOptions, SqlQuerySpec} from '@azure/cosmos'
 import entityUtils from './entity.utils'
 
 let container: Container
@@ -91,6 +91,18 @@ const query = async (querySpec: any, pageRequest: any) => {
     return data
 }
 
+const nativeQuery = async (query: string | SqlQuerySpec, options?: FeedOptions) => {
+
+    const container = await containerInstance()
+
+    const queryIterator = container.items.query(query, options)
+
+    // Fetch results for the current page
+    const {resources: results} = await queryIterator.fetchAll()
+
+    return results || []
+}
+
 const fetchTotalCount = async (querySpec: any, container: any) => {
 
     const {query, parameters} = querySpec
@@ -151,5 +163,5 @@ const fetchResults = async (querySpec: any, pageable: any, container: any) => {
 }
 
 export default {
-    get, query, save, update, remove
+    get, query, save, update, remove, nativeQuery
 }
