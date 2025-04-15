@@ -35,18 +35,44 @@ const toLocalTime = (utcDateTime: Date | string, zone: string = DEFAULT_ZONE): D
 
 const iso8601Regex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?Z$/;
 
-const isISO8601 = (value: string)=> {
+const isISO8601 = (value: string) => {
     return iso8601Regex.test(value);
 }
 
 const dateRegex = /^\d{4}-\d{2}-\d{2}?$/;
 
-const isDateFormat = (value: string)=> {
+const isDateFormat = (value: string) => {
     return dateRegex.test(value);
 }
 
-const isDateTimeFormat = (value: string)=> {
+const isDateTimeFormat = (value: string) => {
     return isISO8601(value) || isDateFormat(value)
 }
 
-export default {toUTC, toLocalTime, isISO8601, isDateFormat, isDateTimeFormat}
+export const timeDuration = (startDate: number, endDate: number) => {
+
+    let d = Math.abs(endDate - startDate) / 1000  // delta
+    const result: Record<string, number> = {}   // result
+    const s: Record<string, number> = {  // structure
+        hour: 3600,
+        minute: 60,
+        second: 1
+    }
+
+    const computeNumber = (n: number) => {
+        if (n > 9) {
+            return n
+        }
+
+        return '0' + n
+    }
+
+    Object.keys(s).forEach((key: string) => {
+        result[key] = Math.floor(d / s[key])
+        d -= result[key] * s[key]
+    })
+
+    return computeNumber(result.hour) + ':' + computeNumber(result.minute) + ':' + computeNumber(result.second)
+}
+
+export default {toUTC, toLocalTime, isISO8601, isDateFormat, isDateTimeFormat, timeDuration}

@@ -39,7 +39,11 @@ const build = ({searchValue, searchFields, matchFields, orderBy}: {
     validFields.forEach(it => {
 
         const val = matchFields[it]
-        const key = it.split('.').join('_')
+        let key = it.split('.').join('_')
+
+        if(key[0] === '!') {
+            key = key.substring(1)
+        }
 
         if (val instanceof Array) {
 
@@ -71,19 +75,33 @@ const build = ({searchValue, searchFields, matchFields, orderBy}: {
         const val = matchFields[it]
         const key = it.split('.').join('_')
 
+        let columnName = it
+        let valueName = key
+
+        if(it[0] === '!') {
+             columnName = it.substring(1)
+             valueName = key.substring(1)
+        }
+
         if (val instanceof Array) {
 
             if (timeUtil.isDateTimeFormat(val[0])) {
 
-                andOperations.push('c.' + it + ' >= @from_' + key)
-                andOperations.push('c.' + it + ' <= @to_' + key)
+                if(it[0] === '!') {
+
+                    andOperations.push('(NOT IS_DEFINED(c.' + columnName + ') OR (c.' + columnName + ' >= @from_' + valueName + ') AND c.' + columnName + ' <= @to_' + valueName + ')')
+                }else {
+
+                    andOperations.push('c.' + it + ' >= @from_' + valueName)
+                    andOperations.push('c.' + it + ' <= @to_' + valueName)
+                }
 
             } else {
-                andOperations.push('ARRAY_CONTAINS(@' + key + ', c.' + it + ')')
+                andOperations.push('ARRAY_CONTAINS(@' + valueName + ', c.' + it + ')')
             }
         } else if (val[0] === '!') {
 
-            andOperations.push('c.' + it + ' != @' + key)
+            andOperations.push('c.' + it + ' != @' + valueName)
         } else {
 
             const tokens = it.split('.')
@@ -93,9 +111,9 @@ const build = ({searchValue, searchFields, matchFields, orderBy}: {
                 const collectionName = tokens[0]
                 const propertyName = tokens[1]
 
-                andOperations.push('ARRAY_CONTAINS(c.' + collectionName + ', {"' + propertyName + '": @' + key + '}, true)')
+                andOperations.push('ARRAY_CONTAINS(c.' + collectionName + ', {"' + propertyName + '": @' + valueName + '}, true)')
             } else {
-                andOperations.push('c.' + it + ' = @' + key)
+                andOperations.push('c.' + it + ' = @' + valueName)
             }
         }
     })

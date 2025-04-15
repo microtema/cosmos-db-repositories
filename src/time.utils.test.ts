@@ -57,4 +57,37 @@ describe('Time Utils', () => {
         expect(answer).toBeDefined()
         expect(answer).toEqual(utc)
     })
+
+    it('timeDuration', () => {
+
+        const startTime = 1000
+        const endTime = startTime + 1000
+
+        const answer = sut.timeDuration(startTime, endTime)
+
+        expect(answer).toBeDefined()
+        expect(answer).toEqual('00:00:01')
+    })
+
+    it('timeDuration minutes', () => {
+
+        const startTime =  1000 * 60
+        const endTime = startTime * 2
+
+        const answer = sut.timeDuration(startTime, endTime)
+
+        expect(answer).toBeDefined()
+        expect(answer).toEqual('00:01:00')
+    })
+
+    it('timeDuration hours', () => {
+
+        const startTime =  1000 * 60 * 60
+        const endTime = startTime * 2
+
+        const answer = sut.timeDuration(startTime, endTime)
+
+        expect(answer).toBeDefined()
+        expect(answer).toEqual('01:00:00')
+    })
 })

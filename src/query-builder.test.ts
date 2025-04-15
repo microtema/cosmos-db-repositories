@@ -303,5 +303,49 @@ describe('Query Builder', () => {
         }
         ])
     })
+
+    it('query with conditional', async () => {
+
+        const searchValue = 'foo'
+        const orderBy = 'firstName'
+
+        const status = 'New'
+        const portfolio = 'Cloud'
+        const nextActivityDueDate = timeRange.parse('2025-02-11T23:00:00.000Z,2025-02-12T22:59:59.999Z')
+
+        const searchFields = ['company', 'portfolio']
+        const matchFields = {portfolio, status, '!nextActivity.dueDate': nextActivityDueDate, markAsDeleted: false}
+
+        const answer = sut.build({searchValue, searchFields, matchFields, orderBy})
+
+        expect(answer).toBeDefined()
+
+        const {query, parameters} = answer
+
+        expect(query).toBeDefined()
+        expect(query).toEqual('SELECT * FROM c WHERE 1=1 AND (CONTAINS(LOWER(c.company), @q) OR CONTAINS(LOWER(c.portfolio), @q)) AND c.portfolio = @portfolio AND c.status = @status AND (NOT IS_DEFINED(c.nextActivity.dueDate) OR (c.nextActivity.dueDate >= @from_nextActivity_dueDate) AND c.nextActivity.dueDate <= @to_nextActivity_dueDate) AND c.markAsDeleted = @markAsDeleted ORDER BY c.firstName DESC')
+
+        expect(parameters).toBeDefined()
+        expect(parameters).toEqual([{
+            "name": "@q",
+            "value": "foo",
+        }, {
+            "name": "@portfolio",
+            "value": "Cloud",
+        }, {
+            "name": "@status",
+            "value": "New",
+        }, {
+            "name": "@from_nextActivity_dueDate",
+            "value": DateTime.fromISO("2025-02-11T23:00:00.000Z").toJSDate(),
+        }, {
+            "name": "@to_nextActivity_dueDate",
+            "value": DateTime.fromISO("2025-02-12T22:59:59.999Z").toJSDate(),
+        }, {
+            "name": "@markAsDeleted",
+            "value": false,
+        }
+        ])
+    })
 })
 
