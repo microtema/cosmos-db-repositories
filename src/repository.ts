@@ -35,15 +35,14 @@ function chunk<T>(array: T[], size: number): T[][] {
     )
 }
 
-const bulk = async (operations: UpsertOperationInput[]) => {
+const bulk = async (operations: UpsertOperationInput[], chunkSize: number = 100) => {
 
-    const BULK_CHUNK_SIZE = 100
     const partitionKey = process.env.AZURE_DATASOURCE_PARTITION_KEY as string
-    let importDataCount = 0
-    let importDataFailedCount = 0
-    const failed :any[] = []
+    const failed: any[] = []
     const token = uuid()
     const startDate = new Date()
+    let importDataCount = 0
+    let importDataFailedCount = 0
 
     console.log('Start migrate (' + operations.length + ') users at ', startDate.toISOString())
 
@@ -65,7 +64,7 @@ const bulk = async (operations: UpsertOperationInput[]) => {
     const container = await containerInstance()
 
     for (const [partitionKey, groupItems] of groups) {
-        const chunks = chunk(groupItems, BULK_CHUNK_SIZE)
+        const chunks = chunk(groupItems, chunkSize)
 
         let groupImportDataCount = 0
         let groupImportDataFailedCount = 0
@@ -102,12 +101,12 @@ const bulk = async (operations: UpsertOperationInput[]) => {
     const duration = timeDuration(startDate.getTime(), now.getTime())
 
     return {
-            total: operations.length,
-            imported: importDataCount,
-            failed,
-            duration,
-            token,
-            message: 'Data import [' + importDataCount + '] successfully completed and [' + importDataFailedCount + '] failed'
+        total: operations.length,
+        imported: importDataCount,
+        failed,
+        duration,
+        token,
+        message: 'Data import [' + importDataCount + '] successfully completed and [' + importDataFailedCount + '] failed'
     }
 }
 
@@ -125,9 +124,9 @@ const update = async (updatedData: any) => {
     const container = await containerInstance()
 
     const id = updatedData.id
-    const partitionKey  = updatedData[process.env.AZURE_DATASOURCE_PARTITION_KEY as string]
+    const partitionKey = updatedData[process.env.AZURE_DATASOURCE_PARTITION_KEY as string]
 
-    const { resource: existingItem } = await container.item(id, partitionKey).read();
+    const {resource: existingItem} = await container.item(id, partitionKey).read();
 
     // Merge the updates into the existing item
     const updatedItem = {
