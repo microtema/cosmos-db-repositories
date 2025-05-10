@@ -4,6 +4,7 @@ import queryParser from './query-parser'
 import repository from './repository'
 import timeRange from './time-range'
 import timeUtil from './time.utils'
+import auditClient from './audit.client'
 
 export {
     entityUtils,
@@ -11,5 +12,6 @@ export {
     queryParser,
     repository,
     timeRange,
-    timeUtil
+    timeUtil,
+    auditClient
 }

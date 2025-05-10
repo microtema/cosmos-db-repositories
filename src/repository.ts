@@ -1,7 +1,8 @@
-import {Container, CosmosClient, FeedOptions, OperationInput, SqlQuerySpec, UpsertOperationInput} from '@azure/cosmos'
+import {Container, CosmosClient, FeedOptions, SqlQuerySpec, UpsertOperationInput} from '@azure/cosmos'
 import entityUtils from './entity.utils'
 import {v4 as uuid} from 'uuid'
-import {timeDuration} from "./time.utils";
+import {timeDuration} from './time.utils'
+import auditClient, {AuditOperation} from './audit.client'
 
 let container: Container
 
@@ -18,15 +19,6 @@ const containerInstance = async () => {
     }
 
     return container
-}
-
-const save = async (item: any) => {
-
-    const container = await containerInstance()
-
-    const {resource} = await container.items.create(item)
-
-    return entityUtils.cleanUp(resource)
 }
 
 function chunk<T>(array: T[], size: number): T[][] {
@@ -119,12 +111,39 @@ const get = async (id: string, partitionKey: string) => {
     return entityUtils.cleanUp(resource)
 }
 
-const update = async (updatedData: any) => {
+const save = async (item: any) => {
 
     const container = await containerInstance()
 
-    const id = updatedData.id
-    const partitionKey = updatedData[process.env.AZURE_DATASOURCE_PARTITION_KEY as string]
+    const {updatedBy: userId, id, [process.env.AZURE_DATASOURCE_PARTITION_KEY!]: partitionKey} = item
+
+    const {resource} = await container.items.create(item)
+
+    const entity = entityUtils.cleanUp(resource)
+
+    await auditClient.publishEvent(AuditOperation.INSERT, userId, {
+        rowId: id,
+        partitionKey,
+        name: process.env.AZURE_DATASOURCE_PARTITION_KEY!
+    }, entity)
+
+    return entity
+}
+
+const update = async (updatedData: any) => {
+
+    const {
+        updatedBy: userId,
+        id,
+        markAsDeleted,
+        [process.env.AZURE_DATASOURCE_PARTITION_KEY!]: partitionKey
+    } = updatedData
+
+    if (markAsDeleted) {
+        return markAsDeleted(id, partitionKey, userId)
+    }
+
+    const container = await containerInstance()
 
     const {resource: existingItem} = await container.item(id, partitionKey).read();
 
@@ -136,17 +155,61 @@ const update = async (updatedData: any) => {
 
     const {resource} = await container.item(id, partitionKey).replace(updatedItem)
 
-    return entityUtils.cleanUp(resource)
+    const entity = entityUtils.cleanUp(resource)
+    const before = entityUtils.cleanUp(existingItem)
+
+    await auditClient.publishEvent(AuditOperation.UPDATE, userId, {
+        rowId: id,
+        partitionKey,
+        name: process.env.AZURE_DATASOURCE_PARTITION_KEY!
+    }, before, entity)
+
+    return entity
 }
 
+const markAsDeleted = async (id: string, partitionKey: string, updatedBy: string) => {
 
-const remove = async (id: string, partitionKey: string) => {
+    const container = await containerInstance()
+
+    const {resource: existingItem} = await container.item(id, partitionKey).read()
+
+    const updatedData = {updatedBy, updatedDate: new Date(), markAsDeleted: true}
+
+    // Merge the updates into the existing item
+    const updatedItem = {
+        ...existingItem,
+        ...updatedData, // Override with new data
+    }
+
+    const {resource} = await container.item(id, partitionKey).replace(updatedItem)
+
+    const entity = entityUtils.cleanUp(resource)
+    const before = entityUtils.cleanUp(existingItem)
+
+    await auditClient.publishEvent(AuditOperation.SOFT_DELETE, updatedBy, {
+        rowId: id,
+        partitionKey,
+        name: process.env.AZURE_DATASOURCE_PARTITION_KEY!
+    }, before, entity)
+
+    return entity
+}
+
+const remove = async (id: string, partitionKey: string, userId: string) => {
 
     const container = await containerInstance()
 
     const {resource} = await container.item(id, partitionKey).delete()
 
-    return entityUtils.cleanUp(resource)
+    const entity = entityUtils.cleanUp(resource)
+
+    await auditClient.publishEvent(AuditOperation.DELETE, userId, {
+        rowId: id,
+        partitionKey,
+        name: process.env.AZURE_DATASOURCE_PARTITION_KEY!
+    }, entity)
+
+    return entity
 }
 
 const query = async (querySpec: any, pageRequest: any) => {
@@ -246,5 +309,5 @@ const fetchResults = async (querySpec: any, pageable: any, container: any) => {
 }
 
 export default {
-    get, query, save, update, remove, bulk, nativeQuery, containerInstance
+    get, query, save, update, remove, markAsDeleted, bulk, nativeQuery, containerInstance
 }
