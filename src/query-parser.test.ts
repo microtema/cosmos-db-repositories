@@ -73,5 +73,16 @@ describe('Query Parser', () => {
         expect(answer).toEqual({age:33,married:true,name:'Julius', dob: new Date('2025-05-07')})
     })
 
+    it('Parse csv properties', () => {
+
+        const properties:string[] = ['married:true,age:33,name:Julius,dob:2025-05-07']
+
+        const answer = sut.parseProperties(properties)
+
+        expect(answer).toBeDefined()
+
+        expect(answer).toEqual({age:33,married:true,name:'Julius', dob: new Date('2025-05-07')})
+    })
+
 })
 

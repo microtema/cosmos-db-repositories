@@ -9,8 +9,14 @@ const parseProperties = (properties: string[] | null | undefined | never) => {
     }
 
     for (let i = 0; i < properties.length; i++) {
-        const [name, value] = properties[i].split(':')
-        matchFields[name] = inferQueryValue(value)
+
+        const tokens = properties[i].split(',')
+
+        for (let j = 0; j < tokens.length; j++) {
+            const token = tokens[j]
+            const [name, value] = token.split(':')
+            matchFields[name] = inferQueryValue(value)
+        }
     }
 
     return matchFields
