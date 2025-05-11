@@ -40,9 +40,9 @@ const publishEvent = async (eventType: AuditOperationType, userId: string, docum
 
     const data = {
         userId,
-        documentId:document.rowId,
-        documentKey:document.partitionKey,
-        documentType:document.name,
+        documentId: document.rowId,
+        documentKey: document.partitionKey,
+        documentType: document.name,
         changes,
         before,
         after
@@ -52,7 +52,7 @@ const publishEvent = async (eventType: AuditOperationType, userId: string, docum
         id: uuid(),
         eventTime,
         eventType,
-        subject: document.name,
+        subject: 'Audit',
         dataVersion: '1.0',
         data
     }
