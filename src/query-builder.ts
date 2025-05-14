@@ -41,7 +41,7 @@ const build = ({searchValue, searchFields, matchFields, orderBy}: {
         const val = matchFields[it]
         let key = it.split('.').join('_')
 
-        if(key[0] === '!') {
+        if (key[0] === '!') {
             key = key.substring(1)
         }
 
@@ -78,19 +78,19 @@ const build = ({searchValue, searchFields, matchFields, orderBy}: {
         let columnName = it
         let valueName = key
 
-        if(it[0] === '!') {
-             columnName = it.substring(1)
-             valueName = key.substring(1)
+        if (it[0] === '!') {
+            columnName = it.substring(1)
+            valueName = key.substring(1)
         }
 
         if (val instanceof Array) {
 
             if (timeUtil.isDateTimeFormat(val[0])) {
 
-                if(it[0] === '!') {
+                if (it[0] === '!') {
 
                     andOperations.push('(NOT IS_DEFINED(c.' + columnName + ') OR (c.' + columnName + ' >= @from_' + valueName + ') AND c.' + columnName + ' <= @to_' + valueName + ')')
-                }else {
+                } else {
 
                     andOperations.push('c.' + it + ' >= @from_' + valueName)
                     andOperations.push('c.' + it + ' <= @to_' + valueName)
@@ -137,22 +137,79 @@ const build = ({searchValue, searchFields, matchFields, orderBy}: {
         query += ' AND ' + andOperations.join(' AND ')
     }
 
-    if (orderBy) {
+    const orderByProperties = parseOrderProperties(orderBy)
 
-        let property = orderBy
-        let direction = 'DESC'
-        if (orderBy[0] === '!') {
-            property = property.substring(1)
-            direction = 'ASC'
-        }
+    if (orderByProperties.length) {
 
-        query += ' ORDER BY ' + property.split(',')
-            .map(it => it.trim())
-            .map(it => 'c.' + it + ' ' + direction)
+        query += ' ORDER BY ' + orderByProperties
+            .map(it => {
+
+                if (it.collection) {
+
+                    if (it.optional) {
+                        /*
+                        CASE
+                            WHEN IS_DEFINED(c.projects) THEN ARRAY_LENGTH(c.projects)
+                            ELSE 0
+                        END
+                         */
+                        return 'CASE WHEN IS_DEFINED(c.' + it.property + ') THEN ARRAY_LENGTH(c.' + it.property + ') ELSE 0 END ' + it.direction
+                    }
+
+                    // ARRAY_LENGTH(c.projects)
+                    return 'ARRAY_LENGTH(c.' + it.property + ') ' + it.direction
+                }
+
+                return 'c.' + it.property + ' ' + it.direction
+            })
             .join(', ')
     }
 
     return {query, parameters}
+}
+
+export const parseOrderProperties = (orderBy: string | undefined | null) => {
+
+    if (!orderBy || !orderBy.trim().length) {
+        return []
+    }
+
+    return orderBy.split(',').map(parseOrderProperty)
+}
+
+export const parseOrderProperty = (orderBy: string | undefined | null) => {
+
+    if (!orderBy || !orderBy.trim().length) {
+        return {property: orderBy}
+    }
+
+    // [!projects]
+
+    let property = orderBy
+
+    const collection = property[0] === '[' && property[property.length - 1] === ']'
+    if (collection) {
+        property = property.substring(1, property.length - 1)
+    }
+
+    const direction = property[0] === '!' ? 'ASC' : 'DESC'
+
+    if (property[0] === '!') {
+        property = property.substring(1)
+    }
+
+    const optional = property[property.length - 1] === '?'
+
+    if (optional) {
+        property = property.substring(0, property.length - 1)
+    }
+
+    return {
+        property,
+        optional,
+        collection,
+        direction
+    }
 }
 
 class BuildInstance {

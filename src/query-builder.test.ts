@@ -1,4 +1,4 @@
-import queryBuilder from './query-builder'
+import queryBuilder, {parseOrderProperties, parseOrderProperty} from './query-builder'
 import timeUtil from './time.utils'
 import timeRange from './time-range'
 import {DateTime} from "luxon";
@@ -168,7 +168,7 @@ describe('Query Builder', () => {
             "name": "@mail",
             "value": "info@mail.com",
         }])
-        expect(answer.query).toEqual("SELECT * FROM c WHERE 1=1 AND (CONTAINS(LOWER(c.firstName), @q) OR CONTAINS(LOWER(c.lastName), @q)) AND c.age = @age AND c.mail = @mail ORDER BY c.firstName ASC, c.lastName ASC")
+        expect(answer.query).toEqual("SELECT * FROM c WHERE 1=1 AND (CONTAINS(LOWER(c.firstName), @q) OR CONTAINS(LOWER(c.lastName), @q)) AND c.age = @age AND c.mail = @mail ORDER BY c.firstName ASC, c.lastName DESC")
     })
 
     it('instance spec with WHERE', () => {
@@ -346,6 +346,124 @@ describe('Query Builder', () => {
             "value": false,
         }
         ])
+    })
+
+    it('parseOrderProperty on null', () => {
+
+        const sut = parseOrderProperty
+
+        const orderBy = null
+
+        const answer = sut(orderBy)
+
+        expect(answer).toBeDefined()
+        expect(answer).toEqual({property: orderBy})
+    })
+
+    it('parseOrderProperty on undefined', () => {
+
+        const sut = parseOrderProperty
+
+        const orderBy = undefined
+
+        const answer = sut(orderBy)
+
+        expect(answer).toBeDefined()
+        expect(answer).toEqual({property: orderBy})
+    })
+
+    it('parseOrderProperty on empty', () => {
+
+        const sut = parseOrderProperty
+
+        const orderBy = ''
+
+        const answer = sut(orderBy)
+
+        expect(answer).toBeDefined()
+        expect(answer).toEqual({property: orderBy})
+    })
+
+    it('parseOrderProperty on blank', () => {
+
+        const sut = parseOrderProperty
+
+        const orderBy = ' '
+
+        const answer = sut(orderBy)
+
+        expect(answer).toBeDefined()
+        expect(answer).toEqual({property: orderBy})
+    })
+
+    it('parseOrderProperty on required', () => {
+
+        const sut = parseOrderProperty
+
+        const orderBy = 'projects'
+
+        const answer = sut(orderBy)
+
+        expect(answer).toBeDefined()
+        expect(answer).toEqual({property: orderBy, collection: false, direction: 'DESC', optional: false})
+    })
+
+    it('parseOrderProperty on required asc', () => {
+
+        const sut = parseOrderProperty
+
+        const orderBy = '!projects'
+
+        const answer = sut(orderBy)
+
+        expect(answer).toBeDefined()
+        expect(answer).toEqual({property: 'projects', collection: false, direction: 'ASC', optional: false})
+    })
+
+    it('parseOrderProperty on optional collection', () => {
+
+        const sut = parseOrderProperty
+
+        const orderBy = '[projects]'
+
+        const answer = sut(orderBy)
+
+        expect(answer).toBeDefined()
+        expect(answer).toEqual({property: 'projects', collection: true, direction: 'DESC', optional: false})
+    })
+
+    it('parseOrderProperty on required collection', () => {
+
+        const sut = parseOrderProperty
+
+        const orderBy = '[!projects]'
+
+        const answer = sut(orderBy)
+
+        expect(answer).toBeDefined()
+        expect(answer).toEqual({property: 'projects', collection: true, direction: 'ASC', optional: false})
+    })
+
+    it('parseOrderProperty', () => {
+
+        const sut = parseOrderProperties
+
+        const orderBy = '[!projects?],!projectCount?'
+
+        const answer = sut(orderBy)
+
+        expect(answer).toBeDefined()
+        expect(answer).toEqual([{
+            collection: true,
+            direction: 'ASC',
+            optional: true,
+            property: 'projects'
+        }, {
+            collection: false,
+            direction: 'ASC',
+            optional: true,
+            property: 'projectCount'
+        }])
     })
 })
 

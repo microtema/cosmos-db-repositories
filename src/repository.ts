@@ -133,19 +133,19 @@ const save = async (item: any) => {
 const update = async (updatedData: any) => {
 
     const {
-        updatedBy: userId,
+        updatedBy,
         id,
         markAsDeleted,
         [process.env.AZURE_DATASOURCE_PARTITION_KEY!]: partitionKey
     } = updatedData
 
     if (markAsDeleted) {
-        return markAsDeleted(id, partitionKey, userId)
+        return markAsDeletedImpl(id, partitionKey, updatedBy)
     }
 
     const container = await containerInstance()
 
-    const {resource: existingItem} = await container.item(id, partitionKey).read();
+    const {resource: existingItem} = await container.item(id, partitionKey).read()
 
     // Merge the updates into the existing item
     const updatedItem = {
@@ -158,7 +158,7 @@ const update = async (updatedData: any) => {
     const entity = entityUtils.cleanUp(resource)
     const before = entityUtils.cleanUp(existingItem)
 
-    await auditClient.publishEvent(AuditOperation.UPDATE, userId, {
+    await auditClient.publishEvent(AuditOperation.UPDATE, updatedBy, {
         rowId: id,
         partitionKey,
         name: process.env.AZURE_DATASOURCE_PARTITION_KEY!
@@ -167,7 +167,7 @@ const update = async (updatedData: any) => {
     return entity
 }
 
-const markAsDeleted = async (id: string, partitionKey: string, updatedBy: string) => {
+const markAsDeletedImpl = async (id: string, partitionKey: string, updatedBy: string) => {
 
     const container = await containerInstance()
 
@@ -178,7 +178,7 @@ const markAsDeleted = async (id: string, partitionKey: string, updatedBy: string
     // Merge the updates into the existing item
     const updatedItem = {
         ...existingItem,
-        ...updatedData, // Override with new data
+        ...updatedData // Override with new data
     }
 
     const {resource} = await container.item(id, partitionKey).replace(updatedItem)
@@ -309,5 +309,5 @@ const fetchResults = async (querySpec: any, pageable: any, container: any) => {
 }
 
 export default {
-    get, query, save, update, remove, markAsDeleted, bulk, nativeQuery, containerInstance
+    get, query, save, update, remove, markAsDeleted:markAsDeletedImpl, bulk, nativeQuery, containerInstance
 }
