@@ -145,18 +145,6 @@ const build = ({searchValue, searchFields, matchFields, orderBy}: {
             .map(it => {
 
                 if (it.collection) {
-
-                    if (it.optional) {
-                        /*
-                        CASE
-                            WHEN IS_DEFINED(c.projects) THEN ARRAY_LENGTH(c.projects)
-                            ELSE 0
-                        END
-                         */
-                        return 'CASE WHEN IS_DEFINED(c.' + it.property + ') THEN ARRAY_LENGTH(c.' + it.property + ') ELSE 0 END ' + it.direction
-                    }
-
-                    // ARRAY_LENGTH(c.projects)
                     return 'ARRAY_LENGTH(c.' + it.property + ') ' + it.direction
                 }
 
@@ -183,14 +171,9 @@ export const parseOrderProperty = (orderBy: string | undefined | null) => {
         return {property: orderBy}
     }
 
-    // [!projects]
+    // ![projects]?
 
     let property = orderBy
-
-    const collection = property[0] === '[' && property[property.length - 1] === ']'
-    if (collection) {
-        property = property.substring(1, property.length - 1)
-    }
 
     const direction = property[0] === '!' ? 'ASC' : 'DESC'
 
@@ -202,6 +185,11 @@ export const parseOrderProperty = (orderBy: string | undefined | null) => {
 
     if (optional) {
         property = property.substring(0, property.length - 1)
+    }
+
+    const collection = property[0] === '[' && property[property.length - 1] === ']'
+    if (collection) {
+        property = property.substring(1, property.length - 1)
     }
 
     return {

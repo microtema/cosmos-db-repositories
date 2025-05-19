@@ -30,7 +30,7 @@ describe('Time Range', () => {
 
         const timeRanges = [
             'yesterday', 'today', 'tomorrow',
-            'last week', 'this week', 'next week',
+            'last week', 'this week', 'weekly', 'next week',
             'last month', 'this month', 'next month',
             'last quarter', 'this quarter', 'next quarter',
             '1 quarter', '2 quarter', '3 quarter', '4 quarter'
@@ -54,6 +54,20 @@ describe('Time Range', () => {
         const answer = sut.parse(time, zone)
 
         expect(answer).toEqual(sut.parse(time))
+
+    })
+
+    it('weekly', () => {
+
+        const time = 'weekly'
+        const zone = 'Europe/Berlin'
+
+        const [start, end] = sut.parse(time, zone)!
+
+        expect(start).toBeDefined()
+        expect(end).toBeDefined()
+
+        expect(new Date(start).getTime() < new Date(end).getTime()).toEqual(true)
 
     })
 

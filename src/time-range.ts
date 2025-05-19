@@ -22,6 +22,8 @@ const parse = (time: string, zone: string = DEFAULT_ZONE) => {
             return buildLastWeekRange(zone)
         case 'next week':
             return buildNextWeekRange(zone)
+        case 'weekly':
+            return buildWeeklyRange(zone)
         case 'this month':
             return buildAllMonthRange(zone)
         case 'last month':
@@ -54,34 +56,34 @@ const parse = (time: string, zone: string = DEFAULT_ZONE) => {
 
 const buildYesterdayRange = (zone: string) => {
 
-    const now = DateTime.now().setZone(zone);
-    const start = now.startOf('day').minus({day: 1});
-    const end = start.endOf('day');
+    const now = DateTime.now().setZone(zone)
+    const start = now.startOf('day').minus({day: 1})
+    const end = start.endOf('day')
 
     return buildRange(start, end)
 }
 
 const buildAllDayRange = (zone: string) => {
 
-    const now = DateTime.now().setZone(zone);
-    const start = now.startOf('day');
-    const end = start.endOf('day');
+    const now = DateTime.now().setZone(zone)
+    const start = now.startOf('day')
+    const end = start.endOf('day')
 
     return buildRange(start, end)
 }
 
 const buildTomorrowRange = (zone: string) => {
 
-    const now = DateTime.now().setZone(zone);
-    const start = now.plus({days: 1}).startOf('day');
-    const end = start.endOf('day');
+    const now = DateTime.now().setZone(zone)
+    const start = now.plus({days: 1}).startOf('day')
+    const end = start.endOf('day')
 
     return buildRange(start, end)
 }
 
 const buildAllWeekRange = (zone: string) => {
 
-    const now = DateTime.now().setZone(zone);
+    const now = DateTime.now().setZone(zone)
     const start = now.startOf('week')
     const end = start.endOf('week')
 
@@ -90,7 +92,7 @@ const buildAllWeekRange = (zone: string) => {
 
 const buildLastWeekRange = (zone: string) => {
 
-    const now = DateTime.now().setZone(zone);
+    const now = DateTime.now().setZone(zone)
     const start = now.minus({month: 1}).startOf('week')
     const end = start.endOf('week')
 
@@ -99,16 +101,32 @@ const buildLastWeekRange = (zone: string) => {
 
 const buildNextWeekRange = (zone: string) => {
 
-    const now = DateTime.now().setZone(zone);
+    const now = DateTime.now().setZone(zone)
     const start = now.plus({month: 1}).startOf('week')
     const end = start.endOf('week')
 
     return buildRange(start, end)
 }
 
+const   buildWeeklyRange = (zone: string) => {
+
+    const now = DateTime.now().setZone(zone)
+
+    // Find this week's Tuesday at 09:00
+    const thisTuesday = now.set({ weekday: 2, hour: 8, minute: 0, second: 0, millisecond: 0 })
+
+    // If we're before this Tuesday 10:00, shift to last week
+    const end = now < thisTuesday ? thisTuesday.minus({ weeks: 1 }) : thisTuesday
+
+    // Start is previous Tuesday at 08:00
+    const start = end.minus({ weeks: 1 }).set({ hour: 9, minute: 0 })
+
+    return buildRange(start, end)
+}
+
 const buildAllMonthRange = (zone: string) => {
 
-    const now = DateTime.now().setZone(zone);
+    const now = DateTime.now().setZone(zone)
     const start = now.startOf('month')
     const end = start.endOf('month')
 
@@ -135,7 +153,7 @@ const buildLastMonthRange = (zone: string) => {
 
 const buildThisQuarterRange = (zone: string) => {
 
-    const now = DateTime.now().setZone(zone);
+    const now = DateTime.now().setZone(zone)
 
     const quarter = now.quarter
 
@@ -155,7 +173,7 @@ const buildThisQuarterRange = (zone: string) => {
 
 const buildLastQuarterRange = (zone: string) => {
 
-    const now = DateTime.now().setZone(zone);
+    const now = DateTime.now().setZone(zone)
 
     const quarter = now.quarter
 
@@ -175,7 +193,7 @@ const buildLastQuarterRange = (zone: string) => {
 
 const buildNextQuarterRange = (zone: string) => {
 
-    const now = DateTime.now().setZone(zone);
+    const now = DateTime.now().setZone(zone)
 
     const quarter = now.quarter
 
@@ -195,7 +213,7 @@ const buildNextQuarterRange = (zone: string) => {
 
 const buildLastQuarterFromLastYearRange = (zone: string) => {
 
-    const now = DateTime.now().setZone(zone);
+    const now = DateTime.now().setZone(zone)
     const start = now.endOf('year').minus({year: 1})
     const end = start.plus({month: 3})
 
@@ -204,7 +222,7 @@ const buildLastQuarterFromLastYearRange = (zone: string) => {
 
 const buildNextQuarterFromNextYearRange = (zone: string) => {
 
-    const now = DateTime.now().setZone(zone);
+    const now = DateTime.now().setZone(zone)
     const start = now.endOf('year')
     const end = start.plus({month: 3})
 
@@ -213,7 +231,7 @@ const buildNextQuarterFromNextYearRange = (zone: string) => {
 
 const build1QuarterRange = (zone: string) => {
 
-    const now = DateTime.now().setZone(zone);
+    const now = DateTime.now().setZone(zone)
     const start = now.startOf('year')
     const end = start.plus({month: 3})
 
@@ -222,7 +240,7 @@ const build1QuarterRange = (zone: string) => {
 
 const build2QuarterRange = (zone: string) => {
 
-    const now = DateTime.now().setZone(zone);
+    const now = DateTime.now().setZone(zone)
     const start = now.startOf('year').plus({month: 3})
     const end = start.plus({month: 3})
 
@@ -231,7 +249,7 @@ const build2QuarterRange = (zone: string) => {
 
 const build3QuarterRange = (zone: string) => {
 
-    const now = DateTime.now().setZone(zone);
+    const now = DateTime.now().setZone(zone)
     const start = now.startOf('year').plus({month: 6})
     const end = start.plus({month: 3})
 

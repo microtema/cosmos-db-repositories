@@ -420,7 +420,7 @@ describe('Query Builder', () => {
         expect(answer).toEqual({property: 'projects', collection: false, direction: 'ASC', optional: false})
     })
 
-    it('parseOrderProperty on optional collection', () => {
+    it('parseOrderProperty on required collection', () => {
 
         const sut = parseOrderProperty
 
@@ -432,11 +432,11 @@ describe('Query Builder', () => {
         expect(answer).toEqual({property: 'projects', collection: true, direction: 'DESC', optional: false})
     })
 
-    it('parseOrderProperty on required collection', () => {
+    it('parseOrderProperty on optional collection', () => {
 
         const sut = parseOrderProperty
 
-        const orderBy = '[!projects]'
+        const orderBy = '![projects]'
 
         const answer = sut(orderBy)
 
@@ -448,7 +448,7 @@ describe('Query Builder', () => {
 
         const sut = parseOrderProperties
 
-        const orderBy = '[!projects?],!projectCount?'
+        const orderBy = '![projects]?,!projectCount?'
 
         const answer = sut(orderBy)
 
