@@ -115,7 +115,7 @@ const save = async (item: any) => {
 
     const container = await containerInstance()
 
-    const {updatedBy: userId, id, [process.env.AZURE_DATASOURCE_PARTITION_KEY!]: partitionKey} = item
+    const {createdBy: userId, id, [process.env.AZURE_DATASOURCE_PARTITION_KEY!]: partitionKey} = item
 
     const {resource} = await container.items.create(item)
 
