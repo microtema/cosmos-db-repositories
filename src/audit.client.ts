@@ -1,6 +1,6 @@
-import {EventGridPublisherClient, AzureKeyCredential} from '@azure/eventgrid'
 import {diff} from 'deep-diff'
 import {v4 as uuid} from 'uuid'
+import eventClient from './event.client'
 
 interface DocumentKey {
     name: string;
@@ -16,22 +16,6 @@ export const AuditOperation = {
 } as const
 
 export type AuditOperationType = typeof AuditOperation[keyof typeof AuditOperation]
-
-let eventClient: EventGridPublisherClient<'EventGrid'>
-
-const clientInstance = () => {
-
-    if (!eventClient) {
-
-        const topicEndpoint = process.env.AZURE_DATAGRID_TOPIC_URL!
-        const topicKey = process.env.AZURE_DATAGRID_TOPIC_KEY!
-        const inputSchema = 'EventGrid'
-
-        eventClient = new EventGridPublisherClient(topicEndpoint, inputSchema, new AzureKeyCredential(topicKey))
-    }
-
-    return eventClient
-}
 
 const publishEvent = async (eventType: AuditOperationType, userId: string, document: DocumentKey, before?: any, after?: any) => {
 
@@ -57,7 +41,7 @@ const publishEvent = async (eventType: AuditOperationType, userId: string, docum
         data
     }
 
-    await clientInstance().send([event])
+    await eventClient.send([event])
 }
 
 
